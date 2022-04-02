@@ -28,3 +28,36 @@
     mode: 0755
     owner: kafka
     group: kafka
+
+- name: Download Kafka and Unzip
+  become: yes
+  become_user: kafka
+  unarchive: 
+    src: https://dlcdn.apache.org/kafka/3.1.0/kafka_2.13-3.1.0.tgz
+    dest: "{{installation_dir}}"
+    mode: 0755
+    remote_src: yes
+
+- name: Move all the files to parent Directory
+  become: yes
+  become_user: kafka
+  shell:
+    mv {{installation_dir}}/kafka_*/* {{installation_dir}}/.
+
+- name: Update the log path
+  become: yes
+  become_user: kafka
+  replace:
+    path: "{{installation_dir}}/config/server.properties"
+    regexp: 'log.dirs=(.+)'
+    replace: 'log.dirs={{installation_dir}}/logs'
+    backup: yes
+
+- name: Update the Java Heap Size for Kafka
+  become: yes
+  become_user: kafka
+  replace:
+    path: "{{installation_dir}}/bin/kafka-server-start.sh"
+    regexp: 'export KAFKA_HEAP_OPTS=(".+")'
+    replace: 'export KAFKA_HEAP_OPTS="-Xmx520M -Xms520M"'
+    backup: yes
