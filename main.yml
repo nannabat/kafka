@@ -81,3 +81,52 @@
       [Install]
       WantedBy=multi-user.target
     mode: 0755
+
+- name: Create a Service file for Kafka with Copy module
+  become: yes
+  copy:
+    dest: /etc/systemd/system/kafka.service
+    content: |
+      [Unit]
+      Requires=zookeeper.service
+      After=zookeeper.service
+
+      [Service]
+      Type=simple
+      User=kafka
+      ExecStart=/bin/sh -c '{{installation_dir}}/bin/kafka-server-start.sh {{installation_dir}}/config/server.properties > {{installation_dir}}/kafkaservice.log 2>&1'
+      ExecStop={{installation_dir}}/bin/kafka-server-stop.sh
+      Restart=on-abnormal
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: 0755
+- name: Start Services
+  tags: startservices
+  become: yes
+  systemd:
+    name: '{{item}}'
+    state: started
+    enabled: yes
+  with_items:
+    - "kafka"
+    - "zookeeper"
+
+- name: Validating if zookeeper is up and listening on port 2181
+  wait_for:
+    host: localhost
+    port: 2181
+    delay: 10
+    timeout: 30
+    state: started
+    msg: "Zookeeper not seem to be running"
+
+- name: Validating if Kafka is up and listening on port 2181
+  wait_for:
+    host: localhost
+    port: 9092
+    delay: 10
+    timeout: 30
+    state: started
+    msg: "Zookeeper not seem to be running"
+
