@@ -61,3 +61,23 @@
     regexp: 'export KAFKA_HEAP_OPTS=(".+")'
     replace: 'export KAFKA_HEAP_OPTS="-Xmx520M -Xms520M"'
     backup: yes
+
+- name: Create a Service file for ZooKeeper with Copy module
+  become: yes
+  copy:
+    dest: /etc/systemd/system/zookeeper.service
+    content: |
+      [Unit]
+      Requires=network.target remote-fs.target
+      After=network.target remote-fs.target
+
+      [Service]
+      Type=simple
+      User=kafka
+      ExecStart={{installation_dir}}/bin/zookeeper-server-start.sh {{installation_dir}}/config/zookeeper.properties
+      ExecStop={{installation_dir}}/bin/zookeeper-server-stop.sh
+      Restart=on-abnormal
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: 0755
